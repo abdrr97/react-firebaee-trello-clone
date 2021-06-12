@@ -1,10 +1,12 @@
-import React, { useState, useEffect, createContext } from 'react'
+import React, { useState, useEffect, createContext, useContext } from 'react'
 import { db } from '../firebase'
 import { COLLECTION_NAME } from '../constants'
+import { AuthContext } from './authContext'
 
 const TrelloContext = createContext()
 
 const TrelloProvider = ({ children }) => {
+  const { currentUser } = useContext(AuthContext)
   const [list, setList] = useState([])
   const [listTitle, setListTitle] = useState('')
   const [loading, setLoading] = useState(false)
@@ -34,6 +36,7 @@ const TrelloProvider = ({ children }) => {
               const max = Math.max(...newList) + 1
               docRef
                 .set({
+                  userId: currentUser.uid,
                   position: max === Math.max() ? 0 : max,
                   cards: [],
                 })
@@ -107,21 +110,23 @@ const TrelloProvider = ({ children }) => {
 
   // get all list of this board
   const getAllLists = () => {
-    setLoading(true)
-    db.collection(COLLECTION_NAME)
-      .orderBy('position')
-      .onSnapshot((snapshot) => {
-        const newList = snapshot.docs.map((doc) => {
-          return {
-            id: doc.id,
-            docId: doc.id,
-            ...doc.data(),
-          }
+    if (currentUser) {
+      setLoading(true)
+      db.collection(COLLECTION_NAME)
+        .orderBy('position')
+        .onSnapshot((snapshot) => {
+          const newList = snapshot.docs.map((doc) => {
+            return {
+              id: doc.id,
+              docId: doc.id,
+              ...doc.data(),
+            }
+          })
+          setList(newList)
+          setListCount(newList.length)
+          setLoading(false)
         })
-        setList(newList)
-        setListCount(newList.length)
-        setLoading(false)
-      })
+    }
   }
 
   const updateListPosition = (result) => {
@@ -136,17 +141,11 @@ const TrelloProvider = ({ children }) => {
           position: source.index,
         })
       })
+
     col.doc(draggableId).update({
       position: destination.index,
     })
   }
-  // combine: null
-  // destination: {droppableId: "board", index: 1}
-  // draggableId: "0"
-  // mode: "FLUID"
-  // reason: "DROP"
-  // source: {index: 0, droppableId: "board"}
-  // type: "COLUMN"
   const resetListPosition = () => {
     const col = db.collection(COLLECTION_NAME)
     col
@@ -165,6 +164,8 @@ const TrelloProvider = ({ children }) => {
 
   useEffect(() => {
     getAllLists()
+
+    return () => getAllLists()
   }, [listCount])
 
   const values = {
