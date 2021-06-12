@@ -3,17 +3,17 @@ import { db, timestamp } from '../firebase'
 import { COLLECTION_NAME } from '../constants'
 
 const TrelloContext = createContext()
+
 const TrelloProvider = ({ children }) => {
   const [list, setList] = useState([])
   const [listTitle, setListTitle] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
   const [cardTitle, setCardTitle] = useState('')
+  const [listCount, setListCount] = useState(0)
 
   // handle input changes
-  const cardTitleInput = (e) => {
-    setCardTitle(e.target.value)
-  }
+
   const listTitleInput = (e) => {
     setListTitle(e.target.value)
   }
@@ -30,6 +30,7 @@ const TrelloProvider = ({ children }) => {
         if (!doc.exists) {
           docRef
             .set({
+              position: listCount + 1,
               cards: [],
             })
             .then(() => {
@@ -37,12 +38,12 @@ const TrelloProvider = ({ children }) => {
               setListTitle('')
             })
         } else {
-          setError('there is something wrong !!')
+          setError('list Already exists !!')
           setLoading(false)
         }
       })
     } else {
-      setError('there is something wrong !!')
+      setError('list title empty ')
       setLoading(false)
     }
     setTimeout(() => setError(''), 1500)
@@ -59,6 +60,7 @@ const TrelloProvider = ({ children }) => {
         if (doc.exists) {
           docRef
             .set({
+              ...doc.data(),
               cards: [...doc.data().cards, cardTitle],
             })
             .then(() => {
@@ -87,20 +89,34 @@ const TrelloProvider = ({ children }) => {
       })
   }
 
+  // update list header
+  const removeList = (id) => {
+    setLoading(true)
+    db.collection(COLLECTION_NAME)
+      .doc(id)
+      .delete()
+      .then(() => {
+        setLoading(false)
+      })
+  }
+
   useEffect(() => {
     setLoading(true)
-    db.collection(COLLECTION_NAME).onSnapshot((snapshot) => {
-      const newList = snapshot.docs.map((doc) => {
-        return {
-          id: doc.id,
-          docId: doc.id,
-          ...doc.data(),
-        }
+    db.collection(COLLECTION_NAME)
+      .orderBy('position', 'desc')
+      .onSnapshot((snapshot) => {
+        const newList = snapshot.docs.map((doc) => {
+          return {
+            id: doc.id,
+            docId: doc.id,
+            ...doc.data(),
+          }
+        })
+        setList(newList)
+        setListCount(newList.length)
+        setLoading(false)
       })
-      setList(newList)
-      setLoading(false)
-    })
-  }, [])
+  }, [listCount])
 
   const values = {
     list,
@@ -110,9 +126,9 @@ const TrelloProvider = ({ children }) => {
     addList,
     listTitle,
     addCard,
-    cardTitle,
-    cardTitleInput,
     updateListHeader,
+    removeList,
+    setCardTitle,
   }
   return <TrelloContext.Provider value={values} children={children} />
 }
