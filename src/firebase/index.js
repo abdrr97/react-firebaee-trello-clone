@@ -1,4 +1,5 @@
 import firebase from 'firebase'
+import 'firebase/auth'
 
 const config = {
   apiKey: process.env.REACT_APP_API_KEY,
@@ -14,4 +15,7 @@ const db = firebaseConfig.firestore()
 const storage = firebase.storage()
 const timestamp = firebase.firestore.FieldValue.serverTimestamp
 
-export { db, storage, timestamp }
+// initialise auth
+const auth = firebaseConfig.auth()
+
+export { db, storage, timestamp, auth }

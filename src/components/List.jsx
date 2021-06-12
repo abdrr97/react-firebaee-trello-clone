@@ -3,10 +3,9 @@ import { TrelloContext } from '../context'
 import { BsThreeDots } from 'react-icons/bs'
 import CardList from './card/CardList'
 import { Draggable } from 'react-beautiful-dnd'
-
 const C_HEADER = 'card-header d-flex justify-content-between align-items-center'
 
-const List = ({ id, docId, cards, index, position }) => {
+const List = ({ id, docId, cards, position }) => {
   const [toggleHeader, setToggleHeader] = useState(false)
   const [toggleDropdown, setToggleDropdown] = useState(false)
   const [headerTitle, setHeaderTitle] = useState(id)
@@ -19,17 +18,19 @@ const List = ({ id, docId, cards, index, position }) => {
   return (
     <>
       <Draggable draggableId={id} index={position}>
-        {(provided) => (
+        {(provided, snapshot) => (
           <section
-            // drag
             {...provided.dragHandleProps}
             {...provided.draggableProps}
             ref={provided.innerRef}
-            // layout
-            // whileHover={{ opacity: 1 }}
             className='col-2 mb-5'
           >
-            <div className='card shadow-sm'>
+            <div
+              className='card shadow-sm'
+              style={{
+                background: snapshot.isDragging ? 'lightblue' : 'white',
+              }}
+            >
               <div className={C_HEADER}>
                 {toggleHeader ? (
                   <form onSubmit={(e) => handleSubmit(e)}>
