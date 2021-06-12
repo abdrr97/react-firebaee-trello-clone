@@ -11,7 +11,13 @@ const Form = ({ cards, id, setToggle }) => {
 
   return (
     <>
-      <motion.form layout onSubmit={(e) => addCard(e, id)}>
+      <motion.form
+        layout
+        onSubmit={(e) => {
+          addCard(e, id)
+          setCardTitle('')
+        }}
+      >
         <textarea
           placeholder='Enter a title for this card ...'
           autoFocus
